@@ -1,0 +1,125 @@
+function [def_set, eql_set, eq_set, p_vec, IBl] = ENAlgo(IB_mat, IB_liabilities, EQ, N_B, epsilon, shock_answer)
+
+% Implementation of Eisenberg and Noe algorithm
+%  Function name: ENAlgo <-- Need to rename fct file name for this....
+
+%  Inputs:  IB_mat      - Matrix of relative interbank liabilities
+%           TA          - Total assets
+%           TL          - Total liabilities
+%           N_B         - Network size
+%           epsilon     - Shock realization
+%           shock_ans   - Type of shock
+
+%  Outputs: def_set     - Default set
+%           eql_set     - Equity loss set
+%           eq_set      - Equity set
+%           p_vec       - Payments vector
+%           IBl         - Interbank liabilities
+
+
+
+
+% Set the stage
+
+
+if shock_answer == 1
+    eps = epsilon;
+elseif shock_answer == 2
+    eps = 1 - epsilon;          % Update in future when including funds
+elseif shock_answer == 3
+    eps = epsilon((N_N+1):N,1); % Update in future when including funds
+end
+    
+
+
+IBl = sum(IB_liabilities,2);    % Sum IB liabilities for each bank i
+IBa = sum(transpose(IB_liabilities),2);    % Sum IB assets/claims for each bank i
+
+e0  = EQ - IBl + IBa;           % Equity, assuming each bank pays in full
+defaulters = e0 < 0;
+def = diag(defaulters);
+def(def ~= 0) = 1;              % Default matrix (c.p. Lambda(p) in E/N 2001)
+
+count   = 1;
+pay_vec = IBl;                  % Payments vector initializing the system
+
+
+while count <= N_B
+    if count == 1
+        equity = e0;
+    end
+    
+    pay_vecNew = def * equity + pay_vec;
+    
+    equity_new = equity + IB_mat'*pay_vecNew - IBl;
+    defaulters = equity_new < 0;
+    def_new = diag(defaulters);
+    def_new(def_new ~= 0) = 1;
+    
+    if any(def_new ~= def)
+        pay_vec = pay_vecNew;
+        count = count + 1;
+    else
+        count = N_B + 1;
+    end
+    
+end
+    
+
+eql_set = e0 - (eye(N_B) - def_new)*abs(equity);    % Equity-loss for non-defaulting banks
+def_set = diag(def_new);                            % Use default set for eq. loss for def banks
+eq_set = equity;                                    % New equity of all banks (incl. negative equity)
+p_vec = pay_vecNew;                                 % Payments vector
+
+
+
+
+end
+
+
+
+
+
+
+
+
+
+
+%{
+
+
+
+count = 1;
+p_vec = zeros(N_B,1);
+eql_set = zeros(N_B,1);
+eq_set  = EQ;
+def_set = diag(0);
+
+IB_obl  = zeros(N_B,1);
+for i = 1:N_B
+    IB_obl(i,1) = sum(IB_tmp(i,:));
+end
+
+IB_claims = zeros(N_B,1);
+for i = 1:N_B
+    IB_claims(i,1) = sum(IB_tmp(:,i));
+end
+
+eq_start = eq_set - IB_obl + IB_claims;     % Equity of all banks assuming everyone pays in full
+
+def_idx = find(eq_start <0);
+def_set(def_idx,def_idx) = 1;
+
+pay_start = 
+
+
+
+
+% Initialize
+
+
+while count <= N_B                          % At most N_B defaults can happen
+    
+    
+
+%}
